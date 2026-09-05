@@ -4,6 +4,7 @@ type Props = {
   sourceMode: string;
   days: DaySummary[];
   selectedDate: string;
+  walkthroughDate?: string;
   onDateChange: (value: string) => void;
   onSolve: () => void;
   solving: boolean;
@@ -39,6 +40,7 @@ export function DatasetToolbar({
   sourceMode,
   days,
   selectedDate,
+  walkthroughDate,
   onDateChange,
   onSolve,
   solving,
@@ -96,6 +98,7 @@ export function DatasetToolbar({
               {days.map((day) => (
                 <option key={day.date} value={day.date}>
                   {day.date}
+                  {day.date === walkthroughDate ? " — walkthrough" : ""}
                   {day.selectable ? " — validated" : ` — ${day.status}`}
                 </option>
               ))}

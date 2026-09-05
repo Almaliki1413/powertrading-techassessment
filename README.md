@@ -8,6 +8,16 @@ This repository is a locally runnable modular monolith. It verifies authentic AE
 
 The trader view keeps a persistent hindsight warning, a pinned-data quality strip, headline metrics (gross AUD, ending SoC, import/export MWh, throughput/cycles, solver/verification status), four synchronized Plotly charts, an interval audit table, and expandable assumptions/provenance/limitations. Charts and the table appear only after an independently verified solve. The UI never fabricates demo output.
 
+## 30-minute review map
+
+Open these files in order:
+
+- `backend/app/infrastructure/aemo/dispatchis_parser.py` — AEMO C/I/D parse and NSW1 `RRP`
+- `backend/app/domain/battery.py` and `backend/app/domain/revenue.py` — MW↔MWh, SoC, cash flow
+- `backend/app/infrastructure/optimization/pulp_cbc.py` and `backend/app/domain/verification.py` — three-stage solve and independent check
+- `backend/app/domain/explanations.py` — reason codes and local contrast
+- `frontend/src/app/App.tsx` — trader blotter
+
 ## Prerequisites
 
 - Python 3.13
@@ -26,7 +36,7 @@ python scripts/make.py dev
 ```
 
 - API: http://127.0.0.1:8000
-- UI:  http://127.0.0.1:5173
+- UI:  http://127.0.0.1:5173 (also http://localhost:5173)
 
 On Windows, `make.cmd bootstrap` is equivalent. GNU `make` targets wrap the same Python runner.
 
@@ -44,7 +54,7 @@ Then open http://127.0.0.1:8000
 - Source: AEMO NEMWEB DispatchIS archive directory `https://nemweb.com.au/Reports/Archive/DispatchIS_Reports/`
 - Pinned range: `2026-08-26` through `2026-09-01`
 - All seven daily archives are now inspected, hash-pinned, and quality-gated (288 NSW1 intervals each)
-- Default selected day is `2026-09-01`
+- Default / walkthrough day is `2026-08-26` because that day completes the three-stage CBC solve under the documented timeout. Other pinned days stay selectable after the same data gates, but stage 2 may time out; the UI then shows no schedule.
 - Synthetic prices are never substituted. A day stays unselectable if its bytes or quality report fail.
 
 `python scripts/make.py verify-data` re-runs ZIP safety, dynamic C/I/D parsing, NSW1 completeness, and hash checks for every file marked `passed`.
@@ -81,7 +91,13 @@ infrastructure adapters → AEMO ZIP/parser, PuLP/CBC, content-addressed cache
 
 ## UI interpretation
 
-Reason codes are deterministic templates. They must not be read as “a local threshold caused this MILP choice.” Binding constraints are listed beside each interval. Idle after stages 2–3 is `IDLE_TIE_BREAK` or `IDLE_GLOBAL_OPTIMUM`.
+Reason codes name binding constraints. They must not be read as “a local threshold caused this MILP choice.” Beside each interval, the audit table also shows a local contrast: idle or the opposite action with every other interval held fixed. That sentence answers why this interval was not left idle or reversed. Idle after stages 2–3 is `IDLE_TIE_BREAK` or `IDLE_GLOBAL_OPTIMUM`.
+
+## Choices and trade-offs
+
+- **MILP vs a percentile heuristic.** A “charge the cheapest 30% / discharge the richest 30%” rule is easy to explain and wrong on this battery: SoC, round-trip efficiency, and the 100 MWh terminal couple the day. The MILP maximises signed cash flow under those constraints. Cost: some pinned days may not prove stage 2 inside the documented timeout. The app fails closed rather than publishing a heuristic and calling it optimal.
+- **Terminal SoC 100 vs free-end.** Free-end treats leftover energy as worthless and inflates one-day revenue by draining the pack. 100 MWh in and out makes the day a like-for-like cycle. Cost: the last intervals can charge at a high price just to hit 100 MWh. That looks locally wasteful and is a feature of the assumption.
+- **Three stages vs one objective.** One `max revenue` solve can chatter: same money, extra cycling. Stage 2 picks the least-throughput schedule at `R*`. Stage 3 prefers idle among those ties so the blotter is readable. Cost: stage 2 is the slow MIP and the usual 1 Sep-style failure mode.
 
 ## Tests and known checks
 

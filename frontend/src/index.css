@@ -472,6 +472,13 @@ th, td {
 
 th.num, td.num { text-align: right; }
 
+td.contrast {
+  min-width: 18rem;
+  max-width: 28rem;
+  white-space: normal;
+  font-family: var(--font-sans, inherit);
+}
+
 th {
   color: var(--muted);
   font-weight: 500;

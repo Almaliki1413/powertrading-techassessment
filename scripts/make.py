@@ -51,7 +51,7 @@ def bootstrap() -> None:
 
 def dev() -> None:
     print("API: http://127.0.0.1:8000")
-    print("UI:  http://127.0.0.1:5173")
+    print("UI:  http://127.0.0.1:5173  (also http://localhost:5173)")
     api = subprocess.Popen(
         [python(), "-m", "uvicorn", "app.main:app", "--reload", "--port", "8000"],
         cwd=BACKEND,

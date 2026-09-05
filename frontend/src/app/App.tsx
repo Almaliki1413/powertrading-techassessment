@@ -19,7 +19,9 @@ export function App() {
   const [selectedDate, setSelectedDate] = useState("2026-08-26");
   const [result, setResult] = useState<OptimizationResult | null>(null);
   const [problem, setProblem] = useState<ProblemDetails | null>(null);
-  const [statusText, setStatusText] = useState("Loading pinned dataset");
+  const [statusText, setStatusText] = useState(
+    "Validating 7 pinned DispatchIS archives (hash, schema, 288 NSW1 intervals)…",
+  );
   const [battery, setBattery] = useState<Record<string, string>>({});
   const [inFlight, setInFlight] = useState(false);
   const selectedDateRef = useRef(selectedDate);
@@ -33,7 +35,7 @@ export function App() {
     setState("resolving_dataset");
     setResult(null);
     setProblem(null);
-    setStatusText("Resolving pinned dataset");
+    setStatusText("Validating 7 pinned DispatchIS archives (hash, schema, 288 NSW1 intervals)…");
     try {
       const config = await fetchConfig();
       setLabel(config.benchmark_label);
@@ -152,6 +154,7 @@ export function App() {
           sourceMode="pinned"
           days={days}
           selectedDate={selectedDate}
+          walkthroughDate={range.defaultDate}
           onDateChange={onDateChange}
           onSolve={() => void onSolve()}
           solving={inFlight}
@@ -229,7 +232,31 @@ export function App() {
             <ul>
               <li>This is a perfect-hindsight benchmark, not a live trading forecast.</li>
               <li>Price-taker energy-only cash flow; no FCAS, fees, degradation, or market impact.</li>
-              <li>Reason codes describe binding constraints and the global MILP; they are not local threshold rules.</li>
+              <li>
+                The walkthrough day is 26 Aug because it completes the three-stage solve under the
+                documented limit; other pinned days may fail stage 2 and then show no schedule.
+              </li>
+              <li>
+                MILP vs a percentile heuristic: SoC, efficiency, and the 100 MWh terminal couple the
+                day, so a cheapest/richest-percentile rule is easy to explain and wrong. The MILP
+                maximises signed cash flow under those constraints and fails closed if CBC is not
+                Optimal.
+              </li>
+              <li>
+                Terminal 100 vs free-end: a free end would drain the pack and inflate one-day
+                revenue. 100 MWh in and out is a like-for-like cycle, so the last intervals can
+                charge at a high price on purpose.
+              </li>
+              <li>
+                Three stages vs one objective: one revenue-only solve can chatter. Stage 2 keeps
+                R* with least throughput; stage 3 prefers idle. Stage 2 is the slow MIP and the
+                usual timeout failure mode.
+              </li>
+              <li>
+                Reason codes name bindings. The “Why not idle / opposite” column holds later
+                intervals fixed and reports the local contrast. That is not a live trading
+                threshold.
+              </li>
               <li>Days remain unselectable until archive safety, schema, completeness, and firm-price gates pass.</li>
             </ul>
           </details>

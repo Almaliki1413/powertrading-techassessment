@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from app.domain.battery import next_soc_mwh, power_snap_tolerance_mw
 from app.domain.models import Action, BatteryConfig, ReasonCode
+from app.domain.revenue import total_revenue_aud
 
 
 def price_percentile(rrp: Decimal, all_rrp: tuple[Decimal, ...]) -> Decimal:
@@ -21,6 +23,102 @@ def classify_action(charge_mw: Decimal, discharge_mw: Decimal, tolerance: Decima
     if charge_mw > tolerance:
         return "charge"
     return "idle"
+
+
+def contrast_interval(
+    *,
+    index: int,
+    charge_mw: tuple[Decimal, ...],
+    discharge_mw: tuple[Decimal, ...],
+    prices: tuple[Decimal, ...],
+    config: BatteryConfig,
+) -> str:
+    snap = power_snap_tolerance_mw(config)
+    charge = tuple(Decimal("0") if abs(v) <= snap else v for v in charge_mw)
+    discharge = tuple(Decimal("0") if abs(v) <= snap else v for v in discharge_mw)
+    chosen = classify_action(charge[index], discharge[index], snap)
+    alternatives: list[tuple[str, Decimal, Decimal]] = []
+    if chosen != "idle":
+        alternatives.append(("Idle", Decimal("0"), Decimal("0")))
+    if chosen == "charge":
+        alternatives.append(("Discharge instead", Decimal("0"), charge[index]))
+    elif chosen == "discharge":
+        alternatives.append(("Charge instead", discharge[index], Decimal("0")))
+    else:
+        alternatives.append(("Charge", config.charge_limit_mw, Decimal("0")))
+        alternatives.append(("Discharge", Decimal("0"), config.discharge_limit_mw))
+
+    _, _, base_revenue = _replay_fixed_rest(charge, discharge, prices, config)
+    parts: list[str] = []
+    for label, alt_charge, alt_discharge in alternatives:
+        trial_charge = list(charge)
+        trial_discharge = list(discharge)
+        trial_charge[index] = alt_charge
+        trial_discharge[index] = alt_discharge
+        feasible, failure, revenue = _replay_fixed_rest(
+            tuple(trial_charge), tuple(trial_discharge), prices, config
+        )
+        if not feasible:
+            parts.append(
+                f"{label} is infeasible with later intervals held fixed: {_failure_clause(failure)}."
+            )
+            continue
+        delta = (revenue - base_revenue).quantize(Decimal("0.01"))
+        if delta < 0:
+            parts.append(
+                f"{label} would lower day revenue by {abs(delta)} AUD with later intervals held fixed."
+            )
+        elif delta > 0:
+            parts.append(
+                f"{label} would raise day revenue by {delta} AUD with later intervals held fixed; "
+                "that local swap is not the global three-stage schedule."
+            )
+        else:
+            parts.append(
+                f"{label} would match day revenue with later intervals held fixed; "
+                "the chosen action comes from the global solve, not a local threshold."
+            )
+    return " ".join(parts)
+
+
+def _failure_clause(kind: str) -> str:
+    if kind == "SoC_min":
+        return "SoC would fall below 0 MWh"
+    if kind == "SoC_max":
+        return "SoC would exceed 200 MWh"
+    if kind == "terminal_soc":
+        return "the 100 MWh terminal target would be missed"
+    if kind == "power":
+        return "a power limit would be violated"
+    return kind.replace("_", " ")
+
+
+def _replay_fixed_rest(
+    charge_mw: tuple[Decimal, ...],
+    discharge_mw: tuple[Decimal, ...],
+    prices: tuple[Decimal, ...],
+    config: BatteryConfig,
+) -> tuple[bool, str, Decimal]:
+    snap = power_snap_tolerance_mw(config)
+    soc = config.initial_soc_mwh
+    for charge, discharge, rrp in zip(charge_mw, discharge_mw, prices, strict=True):
+        charge = Decimal("0") if abs(charge) <= snap else charge
+        discharge = Decimal("0") if abs(discharge) <= snap else discharge
+        if charge > Decimal("0") and discharge > Decimal("0"):
+            return False, "simultaneous", Decimal("0")
+        if charge > config.charge_limit_mw + config.soc_tolerance_mwh:
+            return False, "power", Decimal("0")
+        if discharge > config.discharge_limit_mw + config.soc_tolerance_mwh:
+            return False, "power", Decimal("0")
+        soc = next_soc_mwh(soc, charge, discharge, config)
+        if soc < -config.soc_tolerance_mwh:
+            return False, "SoC_min", Decimal("0")
+        if soc > config.capacity_mwh + config.soc_tolerance_mwh:
+            return False, "SoC_max", Decimal("0")
+    revenue = total_revenue_aud(prices, charge_mw, discharge_mw, config)
+    if abs(soc - config.terminal_soc_mwh) > config.soc_tolerance_mwh * 2:
+        return False, "terminal_soc", revenue
+    return True, "", revenue
 
 
 def explain(

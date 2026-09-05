@@ -12,7 +12,7 @@ from pulp import PULP_CBC_CMD, LpBinary, LpMaximize, LpMinimize, LpProblem, LpSt
 
 from app.domain.battery import interval_energy_mwh, next_soc_mwh, power_snap_tolerance_mw, signed_power_mw
 from app.domain.errors import SolverFailed, SolverUnavailable
-from app.domain.explanations import classify_action, explain, price_percentile
+from app.domain.explanations import classify_action, contrast_interval, explain, price_percentile
 from app.domain.models import (
     BatteryConfig,
     DispatchDecision,
@@ -291,6 +291,15 @@ def assemble_decisions(
             config=config,
             remaining_intervals=n - t - 1,
         )
+        contrast = contrast_interval(
+            index=t,
+            charge_mw=charge_mw,
+            discharge_mw=discharge_mw,
+            prices=prices,
+            config=config,
+        )
+        if contrast:
+            text = f"{text} {contrast}"
         decisions.append(
             DispatchDecision(
                 interval_end=interval.interval_end,

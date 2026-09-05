@@ -3,7 +3,7 @@
   "region_id": "NSW1",
   "start_date": "2026-08-26",
   "end_date": "2026-09-01",
-  "default_date": "2026-09-01",
+  "default_date": "2026-08-26",
   "source_base_url": "https://nemweb.com.au/Reports/Archive/DispatchIS_Reports/",
   "files": [
     {

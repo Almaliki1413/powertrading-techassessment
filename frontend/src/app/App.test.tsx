@@ -67,10 +67,39 @@ describe("App states", () => {
     ).toBeInTheDocument();
   });
 
+  it("records walkthrough-day solvability and design trade-offs", async () => {
+    render(<App />);
+    expect(
+      await screen.findByText(/walkthrough day is 26 Aug/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/MILP vs a percentile heuristic/i)).toBeInTheDocument();
+    expect(screen.getByText(/Terminal 100 vs free-end/i)).toBeInTheDocument();
+    expect(screen.getByText(/Three stages vs one objective/i)).toBeInTheDocument();
+  });
+
   it("does not fabricate results in the ready/empty state", async () => {
     render(<App />);
     expect(await screen.findByText(/Awaiting verified schedule/)).toBeInTheDocument();
     expect(screen.queryByTestId("metric-revenue")).not.toBeInTheDocument();
+  });
+
+  it("names the seven-archive quality gate while the dataset is resolving", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo) => {
+        const url = String(input);
+        if (url.includes("/config")) return mockJson(config);
+        if (url.includes("/resolve")) {
+          return new Promise<Response>(() => undefined);
+        }
+        return mockJson({});
+      }),
+    );
+    render(<App />);
+    expect(
+      await screen.findByText(/Validating 7 pinned DispatchIS archives/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/hash, schema, 288 NSW1 intervals/)).toBeInTheDocument();
   });
 
   it("disables optimization for an unvalidated day", async () => {

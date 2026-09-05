@@ -21,6 +21,7 @@ export function IntervalAuditTable({ decisions }: { decisions: Decision[] }) {
             <th className="num">Interval AUD</th>
             <th className="num">Cumulative AUD</th>
             <th>Reason</th>
+            <th>Why not idle / opposite</th>
             <th>Bindings</th>
           </tr>
         </thead>
@@ -39,7 +40,8 @@ export function IntervalAuditTable({ decisions }: { decisions: Decision[] }) {
               <td className="num">{d.soc_after_mwh}</td>
               <td className="num">{d.interval_cash_flow_aud}</td>
               <td className="num">{d.cumulative_cash_flow_aud}</td>
-              <td title={d.reason_text}>{d.reason_code}</td>
+              <td>{d.reason_code}</td>
+              <td className="contrast">{d.reason_text}</td>
               <td>{d.binding_constraints.join(", ") || "—"}</td>
             </tr>
           ))}
