@@ -1,0 +1,25 @@
+{
+  "python": "3.13.7",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "node": "v22.20.0",
+  "npm": "10.9.3",
+  "packages": {
+    "fastapi": "0.116.2",
+    "pydantic": "2.13.5",
+    "pulp": "3.3.2"
+  },
+  "cbc": {
+    "version": "2.10.3",
+    "executable_path": "C:\\Users\\muhda\\.cursor\\powertrading_techassessment\\backend\\.venv\\Lib\\site-packages\\pulp\\apis\\../solverdir/cbc/win/i64/cbc.exe",
+    "executable_sha256": "fb4642eca630f6263c365975aca7e87917cbe82ed7e6ccb79804e2f1f812419c",
+    "options": [
+      "threads=1"
+    ]
+  },
+  "frontend": {
+    "react": "19.2.8",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "plotly.js-dist-min": "2.35.3"
+  }
+}
