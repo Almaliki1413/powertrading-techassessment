@@ -7,7 +7,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 class ContentCache:
@@ -24,7 +24,7 @@ class ContentCache:
         path = self.path_for(namespace, digest)
         if not path.is_file():
             return None
-        return json.loads(path.read_text(encoding="utf-8"))
+        return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
     def put_json(self, namespace: str, digest: str, payload: dict[str, Any]) -> Path:
         dest = self.path_for(namespace, digest)

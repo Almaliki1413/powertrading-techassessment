@@ -101,7 +101,7 @@ def _replay_fixed_rest(
 ) -> tuple[bool, str, Decimal]:
     snap = power_snap_tolerance_mw(config)
     soc = config.initial_soc_mwh
-    for charge, discharge, rrp in zip(charge_mw, discharge_mw, prices, strict=True):
+    for charge, discharge, _rrp in zip(charge_mw, discharge_mw, prices, strict=True):
         charge = Decimal("0") if abs(charge) <= snap else charge
         discharge = Decimal("0") if abs(discharge) <= snap else discharge
         if charge > Decimal("0") and discharge > Decimal("0"):

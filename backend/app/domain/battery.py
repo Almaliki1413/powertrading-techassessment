@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from app.domain.models import BatteryConfig
 
+
 def power_snap_tolerance_mw(config: BatteryConfig) -> Decimal:
     return max(config.soc_tolerance_mwh, config.throughput_tolerance_mwh / config.interval_hours)
 

@@ -125,8 +125,8 @@ def _parse_csv_rows(text: str, *, archive: str, outer: str, csv_name: str, stats
             schema_by_key[key] = columns
             continue
         if record_type == "D":
-            columns = schema_by_key.get(key)
-            if columns is None:
+            header_columns = schema_by_key.get(key)
+            if header_columns is None:
                 if key == ("DISPATCH", "PRICE", 5):
                     raise UnsupportedSchema(
                         "PRICE data row without a matching I-record header",
@@ -134,6 +134,7 @@ def _parse_csv_rows(text: str, *, archive: str, outer: str, csv_name: str, stats
                     )
                 stats.irrelevant += 1
                 continue
+            columns = header_columns
             values = row[4:]
             if len(values) != len(columns):
                 if key == ("DISPATCH", "PRICE", 5):

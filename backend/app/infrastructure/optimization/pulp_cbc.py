@@ -4,11 +4,23 @@ from __future__ import annotations
 
 import hashlib
 import time
+from collections.abc import Callable, Sequence
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
-import pulp
-from pulp import PULP_CBC_CMD, LpBinary, LpMaximize, LpMinimize, LpProblem, LpStatus, LpVariable, lpSum, value
+import pulp  # type: ignore[import-untyped]
+from pulp import (
+    PULP_CBC_CMD,
+    LpBinary,
+    LpMaximize,
+    LpMinimize,
+    LpProblem,
+    LpStatus,
+    LpVariable,
+    lpSum,
+    value,
+)
 
 from app.domain.battery import interval_energy_mwh, next_soc_mwh, power_snap_tolerance_mw, signed_power_mw
 from app.domain.errors import SolverFailed, SolverUnavailable
@@ -88,7 +100,11 @@ def _query_cbc_version(path: str) -> str:
     return "2.10.3" if "CBC" in text else (text.strip()[:120] or "unknown")
 
 
-def _add_physics(prob: LpProblem, prices: list[float], config: BatteryConfig) -> dict[str, list]:
+def _kill_cbc_on_expire() -> None:
+    kill_owned_solver_processes()
+
+
+def _add_physics(prob: LpProblem, prices: list[float], config: BatteryConfig) -> dict[str, Any]:
     n = len(prices)
     cap = float(config.capacity_mwh)
     charge = [LpVariable(f"charge_{t}", lowBound=0) for t in range(n)]
@@ -127,15 +143,15 @@ def _add_physics(prob: LpProblem, prices: list[float], config: BatteryConfig) ->
 
 
 def _solve_stage(
-    sense,
-    objective,
-    extra_constraints,
+    sense: int,
+    objective: Callable[[dict[str, Any]], object],
+    extra_constraints: Callable[[dict[str, Any]], Sequence[object]],
     prices: list[float],
     config: BatteryConfig,
     timeout_s: float,
     stage: int,
     name: str,
-) -> tuple[dict[str, list], SolverStageEvidence]:
+) -> tuple[dict[str, Any], SolverStageEvidence]:
     prob = LpProblem(f"nsw1_bess_stage_{stage}", sense)
     vars_ = _add_physics(prob, prices, config)
     for constraint in extra_constraints(vars_):
@@ -147,7 +163,7 @@ def _solve_stage(
         status_code = run_with_hard_deadline(
             lambda: prob.solve(solver),
             deadline_s=timeout_s + HARD_DEADLINE_GRACE_S,
-            on_expire=kill_owned_solver_processes,
+            on_expire=_kill_cbc_on_expire,
         )
     except SolverFailed as exc:
         exc.details.setdefault("stage", stage)

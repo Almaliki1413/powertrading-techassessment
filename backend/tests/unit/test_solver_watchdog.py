@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 
 import pytest
-
 from app.domain.errors import SolverFailed
 from app.infrastructure.optimization.solver_watchdog import (
     owned_solver_pids,

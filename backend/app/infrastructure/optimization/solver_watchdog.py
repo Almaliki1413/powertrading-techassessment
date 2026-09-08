@@ -7,17 +7,14 @@ import signal
 import threading
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import TypeVar
 
 from app.domain.errors import SolverFailed
-
-T = TypeVar("T")
 
 HARD_DEADLINE_GRACE_S = 5.0
 CBC_PROCESS_NAMES = frozenset({"cbc", "cbc.exe"})
 
 
-def run_with_hard_deadline(
+def run_with_hard_deadline[T](
     fn: Callable[[], T],
     *,
     deadline_s: float,

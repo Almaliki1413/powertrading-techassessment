@@ -4,7 +4,6 @@ import io
 import zipfile
 
 import pytest
-
 from app.domain.errors import UnsafeArchive
 from app.infrastructure.aemo.zip_safety import iter_safe_members
 
@@ -20,7 +19,16 @@ def _zip_bytes(names: dict[str, bytes]) -> bytes:
 def test_rejects_path_traversal() -> None:
     data = _zip_bytes({"../secret.csv": b"x"})
     with pytest.raises(UnsafeArchive):
-        list(iter_safe_members(data, archive_label="t", allowed_suffixes=(".csv",), max_members=10, max_file_bytes=1000, aggregate_budget=[0]))
+        list(
+            iter_safe_members(
+                data,
+                archive_label="t",
+                allowed_suffixes=(".csv",),
+                max_members=10,
+                max_file_bytes=1000,
+                aggregate_budget=[0],
+            )
+        )
 
 
 def test_rejects_duplicate_names() -> None:

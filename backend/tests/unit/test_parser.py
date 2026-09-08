@@ -6,7 +6,6 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
-
 from app.domain.errors import IncompleteIntervalSet, InvalidRrp, UnsupportedSchema
 from app.infrastructure.aemo.dispatchis_parser import (
     canonicalize_candidates,
@@ -47,7 +46,13 @@ HEADER = [
 ]
 
 
-def _row(settlement: str, region: str, rrp: str, last_changed: str, dispatch_interval: str = "202608260405") -> list[str]:
+def _row(
+    settlement: str,
+    region: str,
+    rrp: str,
+    last_changed: str,
+    dispatch_interval: str = "202608260405",
+) -> list[str]:
     return [
         "D",
         "DISPATCH",

@@ -11,17 +11,26 @@ type Props = {
   canSolve: boolean;
 };
 
+function utcDateFromIso(iso: string): Date {
+  const parts = iso.split("-").map(Number);
+  const year = parts[0];
+  const month = parts[1];
+  const day = parts[2];
+  if (year === undefined || month === undefined || day === undefined) {
+    return new Date(Number.NaN);
+  }
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 function weekday(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-AU", {
+  return utcDateFromIso(iso).toLocaleDateString("en-AU", {
     weekday: "short",
     timeZone: "UTC",
   });
 }
 
 function shortDate(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-AU", {
+  return utcDateFromIso(iso).toLocaleDateString("en-AU", {
     day: "numeric",
     month: "short",
     timeZone: "UTC",

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
-
 from app.main import create_app
 from app.settings import Settings
+from fastapi.testclient import TestClient
 
 
 def test_health_does_not_depend_on_data() -> None:

@@ -3,7 +3,6 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
-
 from app.domain.battery import interval_energy_mwh, next_soc_mwh
 from app.domain.explanations import classify_action, explain, price_percentile
 from app.domain.models import BatteryConfig

@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 from app.api import health
 from app.api.problem_details import install_exception_handlers, request_id_for
@@ -28,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class StructuredLogMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Callable) -> Any:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         request_id = request_id_for(request)
         request.state.request_id = request_id
         response = await call_next(request)
@@ -86,7 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
         @app.get("/{full_path:path}", response_model=None)
-        async def spa(full_path: str):
+        async def spa(full_path: str) -> FileResponse | JSONResponse:
             if full_path.startswith("api/") or full_path in {"health", "ready"}:
                 return JSONResponse({"code": "NOT_FOUND", "message": "Not found"}, status_code=404)
             index = dist / "index.html"

@@ -93,7 +93,7 @@ class ArchiveClient:
             pool=self.settings.http_connect_timeout_s,
         )
         last_error: Exception | None = None
-        for attempt in range(self.settings.http_retries + 1):
+        for _attempt in range(self.settings.http_retries + 1):
             try:
                 return self._stream_download(url, timeout)
             except (httpx.TransportError, httpx.HTTPStatusError) as exc:

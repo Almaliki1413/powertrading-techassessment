@@ -60,8 +60,11 @@ export function describeBlockingProblem(problem: ProblemDetails): {
       gates,
     };
   }
-  if (typeof details.status === "string" && STATUS_REASON[details.status]) {
-    return { reason: STATUS_REASON[details.status], gates };
+  if (typeof details.status === "string") {
+    const statusReason = STATUS_REASON[details.status];
+    if (statusReason) {
+      return { reason: statusReason, gates };
+    }
   }
   return { reason: problem.message, gates };
 }

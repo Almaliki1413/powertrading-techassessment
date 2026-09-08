@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 
 from fastapi import APIRouter
 
@@ -17,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[3]
 def _build_info() -> dict[str, object]:
     path = ROOT / "build-info.json"
     if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
+        return cast(dict[str, object], json.loads(path.read_text(encoding="utf-8")))
     return {"status": "unrecorded"}
 
 

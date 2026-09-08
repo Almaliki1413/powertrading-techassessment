@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import cast
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
@@ -20,7 +21,7 @@ class ResolveRequest(BaseModel):
 
 
 def _resolver(request: Request) -> ResolveDataset:
-    return request.app.state.resolver
+    return cast(ResolveDataset, request.app.state.resolver)
 
 
 @router.get("/datasets/pinned")
